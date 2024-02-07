@@ -1,0 +1,37 @@
+<!-- login_form.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login</title>
+</head>
+<body>
+    <h2>Sales Management</h2>
+    
+<ul>
+    <ul>
+        {% for company in data %}
+          <li>
+            <p>{{ company }}</p>
+            <ul>
+              {% for interest in interests %}
+                {% if interest.company_id == company.id %}
+                  <li>
+                    <p>Interest Rate: {{ interest }}</p>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </li>
+          <a href="/home/sales_preview/status">Status</a>
+
+        {% endfor %}
+      </ul>
+      
+</ul>
+
+    <a href="/home/sales_add">Add a Company</a>
+</body>
+</html>
