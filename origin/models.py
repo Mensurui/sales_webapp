@@ -54,3 +54,6 @@ class ProductStatus(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     description = models.TextField()
     date_updated = models.DateTimeField(auto_now=True)
+    
+    def __str__(self) -> str:
+        return f"{self.status} {self.description}"

@@ -11,27 +11,35 @@
     <h2>Sales Management</h2>
     
 <ul>
-    <ul>
-        {% for company in data %}
-          <li>
+    {% for company in data %}
+        <li>
             <p>{{ company }}</p>
             <ul>
-              {% for interest in interests %}
-                {% if interest.company_id == company.id %}
-                  <li>
-                    <p>Interest Rate: {{ interest }}</p>
-                  </li>
-                {% endif %}
-              {% endfor %}
+                {% for interest in interests %}
+                    {% if interest.company_id == company.id %}
+                        <li>
+                            <p>Interest Rate: {{ interest }}</p>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% for status in statuses %}
+                    {% if status.company_id == company.id %}
+                        <li>
+                            <p>Status: {{ status }}</p>
+                            <p>Status ID: {{ status.id }}</p>
+                            {% for status_id in status_ids %}
+                                {% if status.id == status_id %}
+                                    <a href="{% url 'sales_status_update' status_id=status_id %}">Status</a>
+                                {% endif %}
+                            {% endfor %}
+                        </li>
+                    {% endif %}
+                {% endfor %}
             </ul>
-          </li>
-          <a href="/home/sales_preview/status">Status</a>
-
-        {% endfor %}
-      </ul>
-      
+        </li>
+    {% endfor %}
 </ul>
 
-    <a href="/home/sales_add">Add a Company</a>
+<a href="/home/sales_add">Add a Company</a>
 </body>
 </html>

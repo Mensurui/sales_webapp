@@ -36,3 +36,11 @@ class ProductSelectionForm(forms.Form):
     class Meta:
         model= Product, ProductStatus
         fields= '__all__'
+        
+class ProductStatusUpdateForm(forms.Form):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('closed', 'Closed'),
+        ('denied', 'Denied'),
+    ]
+    updated_status = forms.ChoiceField(choices=STATUS_CHOICES)

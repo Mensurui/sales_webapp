@@ -1,0 +1,42 @@
+{% for status in statuses %}
+    <p>Current status: {{ status }}</p>
+    <form id="status-form-{{ status.id }}" method="post" data-status-id="{{ status.id }}">
+        {% csrf_token %}
+        <select name="updated_status">
+            <option value="pending" {% if status.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="closed" {% if status.status == 'closed' %}selected{% endif %}>Closed</option>
+            <option value="denied" {% if status.status == 'denied' %}selected{% endif %}>Denied</option>
+        </select>
+        <button type="submit">Update</button>
+    </form>
+{% endfor %}
+
+<script>
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const status_id = this.getAttribute('data-status-id');
+            fetch('/sales_preview/status/' + status_id {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })            
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data); // Handle response data if needed
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+            
+        });
+    });
+</script>

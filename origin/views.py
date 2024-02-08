@@ -1,8 +1,8 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import get_list_or_404, redirect, render
 from django.http import HttpResponse
 
 from origin.models import Company, Product, ProductStatus, SalesProcess
-from .forms import DetailRegistrationForm, ProductSelectionForm, UserRegistrationForm
+from .forms import DetailRegistrationForm, ProductSelectionForm, ProductStatusUpdateForm, UserRegistrationForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from .forms import CompanyRegistrationForm
@@ -34,20 +34,24 @@ def UserLoginView(request):
     
 @login_required
 def SalesPreView(request):
+    # Get the companies associated with the logged-in user
     companies = Company.objects.filter(user=request.user)
+    # Extract the IDs of the companies
     company_ids = [company.id for company in companies]
+    # Print company IDs for debugging
     print(f"Company IDs: {company_ids}")
-
+    # Retrieve sales processes related to these companies
     interesting = SalesProcess.objects.filter(company_id__in=company_ids)
+    # Retrieve product statuses related to these companies
+    statuses = ProductStatus.objects.filter(company_id__in=company_ids)
+    # Extract the IDs of the statuses
+    status_ids = [status.id for status in statuses]
+    # Print sales processes, product statuses, and status IDs for debugging
     print(f"Interests: {interesting}")
-
-    data = companies  # Use the queryset directly
-    interest = interesting
-
-    print(f"Companies: {data}")
-    print(f"Interests: {interest}")
-
-    return render(request, 'sales_preview.html', {'data': data, 'interests': interest})
+    print(f"Statuses: {statuses}")
+    print(f"Status IDs: {status_ids}")
+    # Pass the companies, sales processes, and statuses to the template
+    return render(request, 'sales_preview.html', {'data': companies, 'interests': interesting, 'statuses': statuses, 'status_ids': status_ids})
 from django.urls import reverse
 
 @login_required
@@ -105,5 +109,22 @@ def SalesInfoView(request, company_id):
 
 @login_required
 def SalesStatus(request, company_id):
-    print(f"Company ID: {company_id}")
-    return HttpResponse("eheol")
+    statuses = ProductStatus.objects.filter(company_id=company_id)
+    return render(request, 'sales_status.html', {'statuses':statuses})
+
+from django.http import JsonResponse
+
+@login_required
+def SalesStatusUpdate(request, status_id):
+    statuses = get_list_or_404(ProductStatus, id=status_id)
+    if request.method == 'POST':
+        form = ProductStatusUpdateForm(request.POST)
+        if form.is_valid():
+            updated_status = form.cleaned_data['updated_status']
+            for status in statuses:
+                status.status = updated_status
+                status.save()
+            return redirect('/home/sales_preview')
+    else:
+        form = ProductStatusUpdateForm()
+    return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
