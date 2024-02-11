@@ -56,4 +56,4 @@ class ProductStatus(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     
     def __str__(self) -> str:
-        return f"{self.status} {self.description}"
+        return f"{self.company}{self.status} {self.description}"

@@ -1,45 +1,101 @@
-<!-- login_form.html -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Login</title>
-</head>
-<body>
-    <h2>Sales Management</h2>
-    
-<ul>
-    {% for company in data %}
-        <li>
-            <p>{{ company }}</p>
+{% extends "base.html" %}
+{% block title %}User Login{% endblock title %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Sales Management</h2>
+    </div>
+    <div class="card-body">
+        <div class="company-card">
+            {% if user.is_superuser %}
             <ul>
-                {% for interest in interests %}
-                    {% if interest.company_id == company.id %}
+                {% for company in page_obj %}
+                <li>
+                    <p>{{ company }}</p>
+                    {% for user in users %}
+                        {% if company.user_id == user.id %}
+                            <p>Added by: {{ user.username }}</p>
+                        {% endif %}
+                    {% endfor %}
+                    <ul>
+                        {% for interest in interesting_all %}
+                        {% if interest.company_id == company.id %}
                         <li>
                             <p>Interest Rate: {{ interest }}</p>
                         </li>
-                    {% endif %}
-                {% endfor %}
-                {% for status in statuses %}
-                    {% if status.company_id == company.id %}
+                        {% endif %}
+                        {% endfor %}
+                        {% for status in statuses_all %}
+                        {% if status.company_id == company.id %}
                         <li>
-                            <p>Status: {{ status }}</p>
-                            <p>Status ID: {{ status.id }}</p>
+                            <p>Status: {{ status.status }}</p>
                             {% for status_id in status_ids %}
-                                {% if status.id == status_id %}
-                                    <a href="{% url 'sales_status_update' status_id=status_id %}">Status</a>
-                                {% endif %}
+                            {% if status.id == status_id %}
+                            <a href="{% url 'sales_status_update' status_id=status_id %}">Update Status</a>
+                            {% endif %}
                             {% endfor %}
                         </li>
-                    {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </li>
                 {% endfor %}
             </ul>
-        </li>
-    {% endfor %}
-</ul>
+            {% else %}
+            <ul>
+                {% for company in page_obj %}
+                <li>
+                    <p>{{ company }}</p>
+                    <ul>
+                        {% for interest in interests %}
+                        {% if interest.company_id == company.id %}
+                        <li>
+                            <p>Interest Rate: {{ interest }}</p>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        {% for status in statuses %}
+                        {% if status.company_id == company.id %}
+                        <li>
+                            <p>Status: {{ status.status }}</p>
+                            {% for status_id in status_ids %}
+                            {% if status.id == status_id %}
+                            <a href="{% url 'sales_status_update' status_id=status_id %}">Update Status</a>
+                            {% endif %}
+                            {% endfor %}
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        <a href="/sales_add">Add a Company</a>
+        {% if user.is_superuser %}
+        <button>Status</button>
+        {% endif %}
+    </div>
+</div>
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="pagination-link">&laquo; First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">Previous</a>
+        {% endif %}
 
-<a href="/home/sales_add">Add a Company</a>
-</body>
-</html>
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-link">Last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+
+
+
+{% endblock content %}

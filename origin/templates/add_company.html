@@ -1,7 +1,66 @@
-<form method="POST">
-    {% csrf_token %}
-{{form.as_p}}
-
-  
-<button type="submit">Submit</button>
-</form>
+<!-- login_form.html -->
+{% extends "base.html" %}
+{% block title %}User Login{% endblock title %}
+{% block content %}
+<head>
+    <style>
+        /* Visual Enhancements */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2; /* Light background color */
+        }
+        form {
+            background-color: #fff; /* White background for form */
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+            width: 80%; /* Limit form width */
+            margin: auto; /* Center the form */
+        }
+        form label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        form input[type="text"],
+        form input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Ensure input box includes padding */
+        }
+        button[type="submit"] {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #008080; /* Teal background color */
+            color: #fff; /* White text color */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button[type="submit"]:hover {
+            background-color: #005151; /* Darker teal background color on hover */
+        }
+        /* Responsive Design */
+        @media only screen and (max-width: 600px) {
+            form {
+                padding: 15px;
+                width: 100%; /* Full width on small screens */
+            }
+            form input[type="text"],
+            form input[type="password"] {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+{% endblock content %}

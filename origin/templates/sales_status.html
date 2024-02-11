@@ -1,15 +1,31 @@
-{% for status in statuses %}
-    <p>Current status: {{ status }}</p>
-    <form id="status-form-{{ status.id }}" method="post" data-status-id="{{ status.id }}">
-        {% csrf_token %}
-        <select name="updated_status">
-            <option value="pending" {% if status.status == 'pending' %}selected{% endif %}>Pending</option>
-            <option value="closed" {% if status.status == 'closed' %}selected{% endif %}>Closed</option>
-            <option value="denied" {% if status.status == 'denied' %}selected{% endif %}>Denied</option>
-        </select>
-        <button type="submit">Update</button>
-    </form>
-{% endfor %}
+{% extends "base.html" %}
+{% block title %}User Login{% endblock title %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Sales Management</h2>
+    </div>
+    <div class="card-body">
+        {% for status in statuses %}
+            <div class="company-card">
+                <p>Company Name: {{status.company.company_name}}</p>
+                <p>Current status: {{ status.status }}</p>
+                <form id="status-form-{{ status.id }}" method="post" data-status-id="{{ status.id }}">
+                    {% csrf_token %}
+                    <select name="updated_status">
+                        <option value="pending" {% if status.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="closed" {% if status.status == 'closed' %}selected{% endif %}>Closed</option>
+                        <option value="denied" {% if status.status == 'denied' %}selected{% endif %}>Denied</option>
+                    </select>
+                    <button type="submit">Update</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
+
+
 
 <script>
     document.querySelectorAll('form').forEach(form => {

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Your Website{% endblock title %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            padding-top: 5%;
+            padding-bottom: 50px; /* Added padding to prevent footer overlap */
+        }
+        nav {
+            background-color: #008080; /* Teal navigation background */
+            padding: 10px 0;
+            text-align: center;
+            color: #fff; /* White text */
+            position: fixed; /* Ensure fixed positioning for the navigation */
+            width: 100%; /* Full width */
+            top: 0; /* Position at the top */
+            z-index: 999; /* Ensure navigation is above other elements */
+            margin-bottom: 10%;
+            padding-left: 10%; /* Adjusted padding-left */
+        }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        nav ul li {
+            margin-right: 20px;
+        }
+        nav ul li a {
+            color: #fff; /* White text */
+            text-decoration: none;
+            font-size: 18px;
+        }
+        footer {
+            background-color: #333; /* Teal navigation background */
+            padding: 10px 0;
+            text-align: center;
+            color: #fff; /* White text */
+            position: fixed; /* Ensure fixed positioning for the navigation */
+            width: 100%; /* Full width */
+            bottom: 0; /* Position at the top */
+            z-index: 999; /* Ensure navigation is above other elements */
+            padding-left: 10%; /* Adjusted padding-left */
+        }
+        
+
+        /* Burger menu styles */
+        .burger-menu {
+            display: none; /* Hide by default */
+        }
+        .menu {
+            background-color: rgba(0, 128, 128, 0.9); /* Semi-transparent background */
+            position: fixed; /* Ensure fixed positioning for the menu */
+            top: 0; /* Position at the top */
+            left: 0; /* Position at the left */
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            display: none; /* Hide by default */
+            z-index: 998; /* Ensure menu is above navigation */
+            padding-top: 100px; /* Adjust to ensure content is not covered by navigation */
+            padding-left: 10%; /* Adjusted padding-left */
+        }
+        .menu ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .menu ul li {
+            margin-bottom: 20px;
+        }
+        .menu ul li a {
+            color: #fff; /* White text */
+            text-decoration: none;
+            font-size: 24px;
+        }
+
+        /* Burger menu icon styles */
+        .menu-icon {
+            cursor: pointer;
+            background-color: #008080; /* Teal navigation background */
+            padding: 10px;
+            position: fixed; /* Ensure fixed positioning for the icon */
+            top: 10px; /* Adjust as needed */
+            right: 10px; /* Adjust as needed */
+            z-index: 1000; /* Ensure icon is above other elements */
+        }
+        .menu-icon div {
+            width: 25px;
+            height: 3px;
+            background-color: #fff; /* White text */
+            margin: 5px;
+        }
+        /* Enhanced Card Styles */
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease; /* Add smooth hover effect */
+            
+            max-width: 800px; /* Adjust the maximum width as needed */
+            margin: 0 auto; /* Center the card horizontally */
+            overflow: auto; /* Add scrollbars if content overflows */
+        }
+        
+        .card:hover {
+            transform: translateY(-5px); /* Lift the card slightly on hover */
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            font-weight: bold; /* Make header text stand out */
+        }
+        
+        .card-body {
+            padding: 20px;
+            font-size: 16px; /* Adjust font size for readability */
+            line-height: 1.5; /* Improve line spacing */
+        }
+        
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .pagination-link {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 0 2px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .pagination-link:hover {
+            background-color: #f5f5f5;
+        }
+        
+        
+        
+
+        /* Responsive styles */
+        @media only screen and (max-width: 768px) {
+            nav ul {
+                display: none; /* Hide by default */
+            }
+            .burger-menu:checked ~ .menu {
+                display: flex; /* Show menu when burger menu is checked */
+            }
+            .menu-icon {
+                display: block; /* Show burger menu icon */
+            }
+            body {
+                padding-left: 0; /* Adjusted padding-left for smaller screens */
+            }
+            nav,
+            footer {
+                padding-left: 0; /* Adjusted padding-left for smaller screens */
+            }
+            .menu {
+                padding-left: 0; /* Adjusted padding-left for smaller screens */
+            }
+            .card {
+                width: 100%; /* Make cards full width on smaller screens */
+            }
+            .pagination {
+                margin-top: 10px;
+            }
+            
+            .pagination-link {
+                padding: 3px 6px;
+                margin: 0 1px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+    <input type="checkbox" class="burger-menu" id="burger-menu">
+    <label for="burger-menu" class="menu-icon">
+        <div></div>
+        <div></div>
+        <div></div>
+    </label>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/login">Login</a></li>
+            <li><a href="/register">Register</a></li>
+            <!-- Add additional navigation links as needed -->
+        </ul>
+    </nav>
+    
+    <div class="menu">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/login">Login</a></li>
+            <li><a href="/register">Register</a></li>
+            <!-- Add additional menu items as needed -->
+        </ul>
+    </div>
+    <body>
+
+    {% block content %}{% endblock content %}
+
+</body>
+   {% comment %} <footer>
+        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+    </footer>  {% endcomment %}
+</html>
