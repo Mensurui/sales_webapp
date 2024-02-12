@@ -35,7 +35,7 @@ class SalesPerformance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     month = models.IntegerField()
     year = models.IntegerField()
-    closed_deals_count = models.IntegerField()
+    closed_deals_count = models.IntegerField(default=0)
 
 
 
@@ -56,4 +56,4 @@ class ProductStatus(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     
     def __str__(self) -> str:
-        return f"{self.company}{self.status} {self.description}"
+        return f"{self.company.company_name} _ {self.status}"

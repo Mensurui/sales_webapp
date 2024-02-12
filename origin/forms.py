@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm, forms
 from django.contrib.auth.models import User
 from django import forms
-from .models import Company, Product, ProductStatus, SalesProcess
+from .models import Company, Product, ProductStatus, SalesPerformance, SalesProcess
 
 class UserRegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -24,10 +24,9 @@ class CompanyRegistrationForm(forms.ModelForm):
         exclude= ['user']
         
 
-class DetailRegistrationForm(forms.ModelForm):
-    class Meta:
-        model= SalesProcess
-        exclude= ['company']
+class DetailRegistrationForm(forms.Form):
+    INTEREST_CHOICES = [(i, i) for i in range(1, 11)]
+    interest = forms.ChoiceField(choices=INTEREST_CHOICES)
         
 class ProductSelectionForm(forms.Form):
     product = forms.ModelChoiceField(queryset=Product.objects.all())

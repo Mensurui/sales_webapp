@@ -1,7 +1,8 @@
-from django.shortcuts import get_list_or_404, redirect, render
+from django.utils import timezone
+from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.http import HttpResponse
 
-from origin.models import Company, Product, ProductStatus, SalesProcess
+from origin.models import Company, Product, ProductStatus, SalesPerformance, SalesProcess
 from .forms import DetailRegistrationForm, ProductSelectionForm, ProductStatusUpdateForm, UserRegistrationForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -14,7 +15,7 @@ def UserRegistrationView(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('')
+            return redirect('/')
     else: 
         form = UserRegistrationForm()
     return render(request,'register.html', {'form': form})
@@ -102,7 +103,7 @@ def ProductSelectionView(request, company_id):
             product_status.save()
 
             # Redirect to the sales detail view
-            return redirect(reverse('sales_detail', kwargs={'company_id': company_id}))
+            return redirect(reverse('sales_detail', kwargs={'company_id': company_id, 'status':status}))
     else:
         form = ProductSelectionForm()
     
@@ -110,19 +111,42 @@ def ProductSelectionView(request, company_id):
 
 
 @login_required
-def SalesInfoView(request, company_id):
+@login_required
+def SalesInfoView(request, company_id, status):
     if request.method == 'POST':
         form = DetailRegistrationForm(request.POST)
         if form.is_valid():
-            detail = form.save(commit=False)
-            detail.company_id = company_id 
-            detail.save()
-            return redirect(reverse('sales_status', kwargs={'company_id': detail.company_id}))
+            interest = form.cleaned_data['interest']
+            # Create SalesProcess instance
+            sales_process = SalesProcess.objects.create(
+                company_id=company_id,
+                interest=interest
+            )
+            # Get the current month and year
+            today = timezone.now()
+            month = today.month
+            year = today.year
+            # Try to get the SalesPerformance object for the current month and year
+            spr = SalesPerformance.objects.filter(user=request.user).first()
+            if not spr:
+                # If SalesPerformance object doesn't exist for the current month and year, create it
+                spr = SalesPerformance.objects.create(
+                    user=request.user,
+                    month=month,
+                    year=year,
+                    closed_deals_count=0  # Set initial value for closed_deals_count
+                )
+            # Update the closed_deals_count
+            if status == 'closed':
+                spr.closed_deals_count += 1
+                spr.save()
+            else: 
+                spr.save()
+            return redirect(reverse('sales_preview'))
     else:
         form = DetailRegistrationForm()
         
     return render(request, 'add_detail.html', {'form': form})
-
 @login_required
 def SalesStatus(request, company_id):
     statuses = ProductStatus.objects.filter(company_id=company_id)
@@ -135,7 +159,7 @@ def SalesStatusUpdate(request, status_id):
     statuses = get_list_or_404(ProductStatus, id=status_id)
     # print(f"Status: {statuses.company_id}")
     stat = ProductStatus.objects.filter(id= status_id)
-    print(f"Status: {stat}")
+    print(f"Status Ohoy: {stat}")
     if request.method == 'POST':
         form = ProductStatusUpdateForm(request.POST)
         if form.is_valid():
@@ -147,3 +171,43 @@ def SalesStatusUpdate(request, status_id):
     else:
         form = ProductStatusUpdateForm()
     return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
+
+@login_required
+def SalesStatusUpdate(request, status_id):
+    # Retrieve the ProductStatus instance
+    status = get_object_or_404(ProductStatus, id=status_id)
+    
+    if request.method == 'POST':
+        form = ProductStatusUpdateForm(request.POST)
+        if form.is_valid():
+            updated_status = form.cleaned_data['updated_status']
+            if status.status == 'pending' and updated_status == 'closed':
+                # Increment the closed_deals_count in SalesPerformance
+                today = timezone.now()
+                month = today.month
+                year = today.year
+                sales_performance, created = SalesPerformance.objects.get_or_create(
+                    user=request.user,
+                    month=month,
+                    year=year
+                )
+                sales_performance.closed_deals_count += 1
+                sales_performance.save()
+                
+            # Update the status
+            status.status = updated_status
+            status.save()
+            return redirect('/sales_preview')
+    else:
+        form = ProductStatusUpdateForm()
+    
+    # Pass the status as a list to the template
+    statuses = [status]
+    return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
+
+
+def Close_View(request):
+    user = request.user
+    company_ids = Company.objects.filter(user=user).values_list('id', flat=True)
+    product_items = ProductStatus.objects.filter(company_id__in=company_ids)
+    return render(request, 'closed_preview.html', {'product_items': product_items})

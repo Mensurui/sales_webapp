@@ -43,7 +43,10 @@
             </ul>
             {% else %}
             <ul>
+                {% for status in statuses %}
+                {% if status.status == "pending" %}
                 {% for company in page_obj %}
+                {% if status.company_id == company.id %}
                 <li>
                     <p>{{ company }}</p>
                     <ul>
@@ -54,8 +57,6 @@
                         </li>
                         {% endif %}
                         {% endfor %}
-                        {% for status in statuses %}
-                        {% if status.company_id == company.id %}
                         <li>
                             <p>Status: {{ status.status }}</p>
                             {% for status_id in status_ids %}
@@ -64,10 +65,11 @@
                             {% endif %}
                             {% endfor %}
                         </li>
-                        {% endif %}
-                        {% endfor %}
                     </ul>
                 </li>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
                 {% endfor %}
             </ul>
             {% endif %}
@@ -95,7 +97,5 @@
         {% endif %}
     </span>
 </div>
-
-
 
 {% endblock content %}
