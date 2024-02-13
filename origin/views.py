@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.http import HttpResponse
@@ -9,6 +10,8 @@ from django.contrib.auth.decorators import login_required
 from .forms import CompanyRegistrationForm
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
+from django.urls import reverse
+
 # Create your views here.
 def UserRegistrationView(request):
     if request.method == 'POST':
@@ -39,16 +42,21 @@ def UserLoginView(request):
 def SalesPreView(request):
     # Get the companies associated with the logged-in user
     companies = Company.objects.filter(user=request.user)
-    companies_all = Company.objects.all()
+    pending = ProductStatus.objects.filter(status="pending")
+    pending_statuses = ProductStatus.objects.filter(status="pending")
+
+# Assuming you want to retrieve company IDs related to pending statuses
+    company_id_pending = [status.company_id for status in pending_statuses]
+    companies_all = Company.objects.filter(id__in=company_id_pending)
     user = request.user
     users_list = User.objects.all()
     print(f"Users list {users_list}")
     if user.is_superuser:  # Corrected usage of is_superuser
-        paginator = Paginator(companies_all, 8)
+        paginator = Paginator(companies_all,8)
         pagenumber = request.GET.get("page")
         page_obj = paginator.get_page(pagenumber)
     else:
-        paginator = Paginator(companies, 8)
+        paginator = Paginator(companies_all,8)
         pagenumber = request.GET.get("page")
         page_obj = paginator.get_page(pagenumber)
     # Extract the IDs of the companies
@@ -69,7 +77,30 @@ def SalesPreView(request):
     print(f"Status IDs: {status_ids}")
     # Pass the companies, sales processes, and statuses to the template
     return render(request, 'sales_preview.html', {'data': companies, 'interests': interesting, 'statuses': statuses, 'status_ids': status_ids, 'companies_all': companies_all, 'interesting_all':interesting_all, 'statuses_all':statuses_all, "page_obj": page_obj, 'users':users_list})
-from django.urls import reverse
+
+
+@login_required
+def SalesPreViewClosed(request):
+    user = request.user
+    
+    # Filter ProductStatus instances with 'closed' status
+    closed_statuses = ProductStatus.objects.filter(status="closed")
+    
+    # Get the company IDs associated with closed statuses
+    company_ids = closed_statuses.values_list('company_id', flat=True)
+    
+    # Filter companies based on user type
+    if user.is_superuser:
+        companies_list = Company.objects.filter(id__in=company_ids)
+    else:
+        companies_list = Company.objects.filter(id__in=company_ids, user_id=user.id)
+    
+    # Pagination
+    paginator = Paginator(companies_list, 8)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'sales_preview_closed.html', {'companies_list': companies_list, "page_obj": page_obj})
 
 @login_required
 def SalesAddView(request):
@@ -111,7 +142,6 @@ def ProductSelectionView(request, company_id):
 
 
 @login_required
-@login_required
 def SalesInfoView(request, company_id, status):
     if request.method == 'POST':
         form = DetailRegistrationForm(request.POST)
@@ -132,13 +162,29 @@ def SalesInfoView(request, company_id, status):
                 # If SalesPerformance object doesn't exist for the current month and year, create it
                 spr = SalesPerformance.objects.create(
                     user=request.user,
-                    month=month,
-                    year=year,
+                    month=0,
+                    year=0,
                     closed_deals_count=0  # Set initial value for closed_deals_count
                 )
             # Update the closed_deals_count
             if status == 'closed':
                 spr.closed_deals_count += 1
+                user_id = request.user.id
+                user = User.objects.get(id=user_id)
+                date_joined = user.date_joined
+                today = datetime.now(date_joined.tzinfo)
+                difference = today - date_joined
+                months_difference = difference.days // 30
+                print(f"Date joined: {date_joined}")
+                if difference.days == 30:
+                    spr.month = 0
+                else:
+                    spr.month += 1
+                    
+                if difference.days == 365:
+                    spr.year = 0
+                else:
+                    spr.year += 1
                 spr.save()
             else: 
                 spr.save()
@@ -173,6 +219,7 @@ def SalesStatusUpdate(request, status_id):
     return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
 
 @login_required
+@login_required
 def SalesStatusUpdate(request, status_id):
     # Retrieve the ProductStatus instance
     status = get_object_or_404(ProductStatus, id=status_id)
@@ -188,10 +235,26 @@ def SalesStatusUpdate(request, status_id):
                 year = today.year
                 sales_performance, created = SalesPerformance.objects.get_or_create(
                     user=request.user,
-                    month=month,
-                    year=year
+                    month=0,
+                    year=0
                 )
                 sales_performance.closed_deals_count += 1
+                user_id = request.user.id
+                user = User.objects.get(id=user_id)
+                date_joined = user.date_joined
+                today = datetime.now(date_joined.tzinfo)
+                difference = today - date_joined
+                months_difference = difference.days // 30
+                print(f"Date joined: {date_joined}")
+                if difference.days == 30:
+                    sales_performance.month = 0
+                else:
+                    sales_performance.month += 1
+                    
+                if difference.days == 365:
+                    sales_performance.year = 0
+                else:
+                    sales_performance.year += 1
                 sales_performance.save()
                 
             # Update the status
@@ -211,3 +274,32 @@ def Close_View(request):
     company_ids = Company.objects.filter(user=user).values_list('id', flat=True)
     product_items = ProductStatus.objects.filter(company_id__in=company_ids)
     return render(request, 'closed_preview.html', {'product_items': product_items})
+
+
+
+
+'''
+from datetime import datetime, timedelta
+
+# Assuming date_joined is a datetime object
+date_joined = user.date_joined
+
+# Get today's date
+today = datetime.now(date_joined.tzinfo)
+
+# Calculate the difference in days
+difference = today - date_joined
+
+# Convert difference to months
+months_difference = difference.days // 30
+
+# If the difference is exactly 30 days, reset the month count to zero
+if difference.days == 30:
+    spr.month = 0
+# Otherwise, add the number of months difference to the month count
+else:
+    spr.month += months_difference
+
+# Save the changes to the spr object
+spr.save()
+'''

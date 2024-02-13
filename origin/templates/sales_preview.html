@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+
 {% block title %}User Login{% endblock title %}
+
 {% block content %}
 <div class="card">
     <div class="card-header">
@@ -8,14 +10,17 @@
     <div class="card-body">
         <div class="company-card">
             {% if user.is_superuser %}
+            {% for stat in statuses_all %}
+            {% if stat.status == "pending" %}
             <ul>
                 {% for company in page_obj %}
+                {% if stat.company_id == company.id %}
                 <li>
                     <p>{{ company }}</p>
-                    {% for user in users %}
-                        {% if company.user_id == user.id %}
-                            <p>Added by: {{ user.username }}</p>
-                        {% endif %}
+                    {% for user_obj in users %}
+                    {% if company.user_id == user_obj.id %}
+                    <p>Added by: {{ user_obj.username }}</p>
+                    {% endif %}
                     {% endfor %}
                     <ul>
                         {% for interest in interesting_all %}
@@ -25,28 +30,27 @@
                         </li>
                         {% endif %}
                         {% endfor %}
-                        {% for status in statuses_all %}
-                        {% if status.company_id == company.id %}
                         <li>
-                            <p>Status: {{ status.status }}</p>
+                            <p>Status: {{ stat.status }}</p>
                             {% for status_id in status_ids %}
-                            {% if status.id == status_id %}
+                            {% if stat.id == status_id %}
                             <a href="{% url 'sales_status_update' status_id=status_id %}">Update Status</a>
                             {% endif %}
                             {% endfor %}
                         </li>
-                        {% endif %}
-                        {% endfor %}
                     </ul>
                 </li>
+                {% endif %}
                 {% endfor %}
             </ul>
+            {% endif %}
+            {% endfor %}
             {% else %}
             <ul>
-                {% for status in statuses %}
-                {% if status.status == "pending" %}
+                {% for stat in statuses %}
+                {% if stat.status == "pending" %}
                 {% for company in page_obj %}
-                {% if status.company_id == company.id %}
+                {% if stat.company_id == company.id %}
                 <li>
                     <p>{{ company }}</p>
                     <ul>
@@ -58,9 +62,9 @@
                         {% endif %}
                         {% endfor %}
                         <li>
-                            <p>Status: {{ status.status }}</p>
+                            <p>Status: {{ stat.status }}</p>
                             {% for status_id in status_ids %}
-                            {% if status.id == status_id %}
+                            {% if stat.id == status_id %}
                             <a href="{% url 'sales_status_update' status_id=status_id %}">Update Status</a>
                             {% endif %}
                             {% endfor %}
