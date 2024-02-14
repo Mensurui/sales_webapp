@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from django.utils import timezone
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.http import HttpResponse
 
-from origin.models import Company, Product, ProductStatus, SalesPerformance, SalesProcess
+from origin.models import Company, Product, ProductInterest, ProductStatus, SalesPerformance, SalesProcess
 from .forms import DetailRegistrationForm, ProductSelectionForm, ProductStatusUpdateForm, UserRegistrationForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -50,7 +51,7 @@ def SalesPreView(request):
     companies_all = Company.objects.filter(id__in=company_id_pending)
     user = request.user
     users_list = User.objects.all()
-    print(f"Users list {users_list}")
+    # print(f"Users list {users_list}")
     if user.is_superuser:  # Corrected usage of is_superuser
         paginator = Paginator(companies_all,8)
         pagenumber = request.GET.get("page")
@@ -62,7 +63,7 @@ def SalesPreView(request):
     # Extract the IDs of the companies
     company_ids = [company.id for company in companies]
     # Print company IDs for debugging
-    print(f"Company IDs: {company_ids}")
+    # print(f"Company IDs: {company_ids}")
     # Retrieve sales processes related to these companies
     interesting = SalesProcess.objects.filter(company_id__in=company_ids)
     interesting_all = SalesProcess.objects.all()
@@ -72,9 +73,9 @@ def SalesPreView(request):
     # Extract the IDs of the statuses
     status_ids = [status.id for status in statuses]
     # Print sales processes, product statuses, and status IDs for debugging
-    print(f"Interests: {interesting}")
-    print(f"Statuses: {statuses}")
-    print(f"Status IDs: {status_ids}")
+    # print(f"Interests: {interesting}")
+    # print(f"Statuses: {statuses}")
+    # print(f"Status IDs: {status_ids}")
     # Pass the companies, sales processes, and statuses to the template
     return render(request, 'sales_preview.html', {'data': companies, 'interests': interesting, 'statuses': statuses, 'status_ids': status_ids, 'companies_all': companies_all, 'interesting_all':interesting_all, 'statuses_all':statuses_all, "page_obj": page_obj, 'users':users_list})
 
@@ -134,7 +135,7 @@ def ProductSelectionView(request, company_id):
             product_status.save()
 
             # Redirect to the sales detail view
-            return redirect(reverse('sales_detail', kwargs={'company_id': company_id, 'status':status}))
+            return redirect(reverse('sales_detail', kwargs={'company_id': company_id, 'status':status, 'product_id': product_id}))
     else:
         form = ProductSelectionForm()
     
@@ -142,7 +143,7 @@ def ProductSelectionView(request, company_id):
 
 
 @login_required
-def SalesInfoView(request, company_id, status):
+def SalesInfoView(request, company_id, status, product_id):
     if request.method == 'POST':
         form = DetailRegistrationForm(request.POST)
         if form.is_valid():
@@ -175,7 +176,7 @@ def SalesInfoView(request, company_id, status):
                 today = datetime.now(date_joined.tzinfo)
                 difference = today - date_joined
                 months_difference = difference.days // 30
-                print(f"Date joined: {date_joined}")
+                # print(f"Date joined: {date_joined}")
                 if difference.days == 30:
                     spr.month = 0
                 else:
@@ -185,9 +186,36 @@ def SalesInfoView(request, company_id, status):
                     spr.year = 0
                 else:
                     spr.year += 1
+                interest_av = Decimal(interest)
+                product = Product.objects.get(pk=product_id)
+                product_interest = ProductInterest.objects.get(product_id=product.id)
+                if product_interest:
+                    product_interest.count += 1
+                    product_interest.average_interest = (product_interest.average_interest+interest_av) // product_interest.count
+                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                    product_interest.save()
+                else:
+                    ProductInterest.objects.update_or_create(
+                    product=product,
+                    defaults={'average_interest': interest, 'count': 1}
+                    )
                 spr.save()
-            else: 
+            else:
+                interest_av = Decimal(interest)
+                product = Product.objects.get(pk=product_id)
+                product_interest = ProductInterest.objects.get(product_id=product.id)
+                if product_interest:
+                    product_interest.count += 1
+                    product_interest.average_interest = (product_interest.average_interest+interest_av) // product_interest.count
+                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                    product_interest.save()
+                else:
+                    ProductInterest.objects.update_or_create(
+                    product=product,
+                    defaults={'average_interest': interest, 'count': 1}
+                    )
                 spr.save()
+
             return redirect(reverse('sales_preview'))
     else:
         form = DetailRegistrationForm()
@@ -200,30 +228,30 @@ def SalesStatus(request, company_id):
 
 from django.http import JsonResponse
 
-@login_required
-def SalesStatusUpdate(request, status_id):
-    statuses = get_list_or_404(ProductStatus, id=status_id)
-    # print(f"Status: {statuses.company_id}")
-    stat = ProductStatus.objects.filter(id= status_id)
-    print(f"Status Ohoy: {stat}")
-    if request.method == 'POST':
-        form = ProductStatusUpdateForm(request.POST)
-        if form.is_valid():
-            updated_status = form.cleaned_data['updated_status']
-            for status in statuses:
-                status.status = updated_status
-                status.save()
-            return redirect('/sales_preview')
-    else:
-        form = ProductStatusUpdateForm()
-    return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
+# @login_required
+# def SalesStatusUpdate(request, status_id):
+#     statuses = get_list_or_404(ProductStatus, id=status_id)
+#     # print(f"Status: {statuses.company_id}")
+#     stat = ProductStatus.objects.filter(id= status_id)
+#     # print(f"Status Ohoy: {stat}")
+#     if request.method == 'POST':
+#         form = ProductStatusUpdateForm(request.POST)
+#         if form.is_valid():
+#             updated_status = form.cleaned_data['updated_status']
+#             for status in statuses:
+#                 status.status = updated_status
+#                 status.save()
+#             return redirect('/sales_preview')
+#     else:
+#         form = ProductStatusUpdateForm()
+#     return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
 
 @login_required
 @login_required
 def SalesStatusUpdate(request, status_id):
     # Retrieve the ProductStatus instance
     status = get_object_or_404(ProductStatus, id=status_id)
-    
+    user = request.user
     if request.method == 'POST':
         form = ProductStatusUpdateForm(request.POST)
         if form.is_valid():
@@ -233,11 +261,7 @@ def SalesStatusUpdate(request, status_id):
                 today = timezone.now()
                 month = today.month
                 year = today.year
-                sales_performance, created = SalesPerformance.objects.get_or_create(
-                    user=request.user,
-                    month=0,
-                    year=0
-                )
+                sales_performance = SalesPerformance.objects.get(user_id=user.id)
                 sales_performance.closed_deals_count += 1
                 user_id = request.user.id
                 user = User.objects.get(id=user_id)
@@ -245,7 +269,7 @@ def SalesStatusUpdate(request, status_id):
                 today = datetime.now(date_joined.tzinfo)
                 difference = today - date_joined
                 months_difference = difference.days // 30
-                print(f"Date joined: {date_joined}")
+                # print(f"Date joined: {date_joined}")
                 if difference.days == 30:
                     sales_performance.month = 0
                 else:

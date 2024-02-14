@@ -78,7 +78,9 @@
             </ul>
             {% endif %}
         </div>
+        {% if not user.is_superuser %}
         <a href="/sales_add">Add a Company</a>
+        {% endif %}
         {% if user.is_superuser %}
         <button>Status</button>
         {% endif %}

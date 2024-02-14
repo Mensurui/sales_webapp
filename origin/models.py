@@ -41,7 +41,8 @@ class SalesPerformance(models.Model):
 
 class ProductInterest(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    average_interest = models.DecimalField(max_digits=3, decimal_places=2)
+    average_interest = models.DecimalField(max_digits=5, decimal_places=2)
+    count = models.IntegerField(default=0)
 
 class ProductStatus(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
