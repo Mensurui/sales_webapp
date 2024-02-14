@@ -12,6 +12,8 @@ from .forms import CompanyRegistrationForm
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.urls import reverse
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Create your views here.
 def UserRegistrationView(request):
@@ -188,39 +190,37 @@ def SalesInfoView(request, company_id, status, product_id):
                     spr.year += 1
                 interest_av = Decimal(interest)
                 product = Product.objects.get(pk=product_id)
-                product_interest = ProductInterest.objects.get(product_id=product.id)
-                if product_interest:
+                try:
+                    product_interest = ProductInterest.objects.get(product_id=product.id)
+                    # Update the existing product interest
                     product_interest.count += 1
-                    product_interest.average_interest = (product_interest.average_interest+interest_av) // product_interest.count
-                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                    product_interest.average_interest = (product_interest.average_interest + interest_av) // product_interest.count
                     product_interest.save()
-                else:
-                    ProductInterest.objects.update_or_create(
-                    product=product,
-                    defaults={'average_interest': interest, 'count': 1}
-                    )
-                spr.save()
+                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                except ProductInterest.DoesNotExist:
+                    # Create a new ProductInterest object if it doesn't exist
+                    ProductInterest.objects.create(product=product, average_interest=interest, count=1)
             else:
                 interest_av = Decimal(interest)
                 product = Product.objects.get(pk=product_id)
-                product_interest = ProductInterest.objects.get(product_id=product.id)
-                if product_interest:
+                try:
+                    product_interest = ProductInterest.objects.get(product_id=product.id)
+                    # Update the existing product interest
                     product_interest.count += 1
-                    product_interest.average_interest = (product_interest.average_interest+interest_av) // product_interest.count
-                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                    product_interest.average_interest = (product_interest.average_interest + interest_av) // product_interest.count
                     product_interest.save()
-                else:
-                    ProductInterest.objects.update_or_create(
-                    product=product,
-                    defaults={'average_interest': interest, 'count': 1}
-                    )
-                spr.save()
+                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                except ProductInterest.DoesNotExist:
+                    # Create a new ProductInterest object if it doesn't exist
+                    ProductInterest.objects.create(product=product, average_interest=interest, count=1)
 
+            spr.save()
             return redirect(reverse('sales_preview'))
     else:
         form = DetailRegistrationForm()
         
     return render(request, 'add_detail.html', {'form': form})
+
 @login_required
 def SalesStatus(request, company_id):
     statuses = ProductStatus.objects.filter(company_id=company_id)
@@ -299,31 +299,43 @@ def Close_View(request):
     product_items = ProductStatus.objects.filter(company_id__in=company_ids)
     return render(request, 'closed_preview.html', {'product_items': product_items})
 
+def ProductInterestRateChart(request):
+    product_list = ProductInterest.objects.all()
+    name_list=[]
+    print(f"Product list {product_list}")
+    for product in product_list:
+        product_name = Product.objects.filter(id=product.id)
+        name_list.append(product_name)
+    for i in range(len(name_list)):
+        print(name_list[i])
+    y = [product.average_interest for product in product_list],
+    fig = go.Figure(data=[go.Bar(
+       x= [product.product.product_name for product in product_list],
+       y = [product.average_interest for product in product_list],
+       text="Average Interest",
+       textposition='auto',
+    )])
+    
+    chart = fig.to_html()
+    
+    context = {"chart": chart}
+    
+    return render(request, 'ProductInterestRateChart.html', context)
+
+# def SalesPerformanceChart(request):
+#     pstat = ProductStatus.objects.all()
+#     c_list=[]
+#     for p in pstat:
+#         cname = Company.objects.filter(id=p.id)
+#         c_list.append(p.company.id)
+#     fig = go.Figure(data=[go.Bar(
+#         x=[user.user.username for user in pstat],
+#         y = [p.company.company_name for p in pstat]
 
 
-
-'''
-from datetime import datetime, timedelta
-
-# Assuming date_joined is a datetime object
-date_joined = user.date_joined
-
-# Get today's date
-today = datetime.now(date_joined.tzinfo)
-
-# Calculate the difference in days
-difference = today - date_joined
-
-# Convert difference to months
-months_difference = difference.days // 30
-
-# If the difference is exactly 30 days, reset the month count to zero
-if difference.days == 30:
-    spr.month = 0
-# Otherwise, add the number of months difference to the month count
-else:
-    spr.month += months_difference
-
-# Save the changes to the spr object
-spr.save()
-'''
+#     )])
+    
+#     chart = fig.to_html()
+#     context={"chart": chart}
+    
+#     return render(request, 'SalesPerformanceChart.html', context)

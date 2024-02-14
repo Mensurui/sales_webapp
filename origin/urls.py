@@ -12,5 +12,7 @@ urlpatterns = [
     path('sales_add/detail/<int:company_id>/<str:status>/<int:product_id>', views.SalesInfoView, name='sales_detail'),
     path('sales_add/detail/status/<int:company_id>', views.SalesStatus, name='sales_status'),
     path('sales_preview/status/<int:status_id>', views.SalesStatusUpdate, name='sales_status_update'),
-    path('sales_confirmed/', views.Close_View)
+    path('sales_confirmed/', views.Close_View),
+    path('interest/', views.ProductInterestRateChart),
+    path('salesperformancechart/', views.SalesPerformanceChart)
 ]

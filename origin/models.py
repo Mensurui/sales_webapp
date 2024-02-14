@@ -15,7 +15,7 @@ class Company(models.Model):
             raise ValidationError("At least one of owner number or manager number must be provided.")
         
     def __str__(self) -> str:
-        return f"{self.company_name} - {self.company_address}"
+        return f"{self.company_name} - {self.company_address} - {self.user.username} "
 
         
 class SalesProcess(models.Model):
@@ -43,6 +43,9 @@ class ProductInterest(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     average_interest = models.DecimalField(max_digits=5, decimal_places=2)
     count = models.IntegerField(default=0)
+    
+    def __str__(self) -> str:
+        return f"{self.product.product_name}"
 
 class ProductStatus(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -57,4 +60,4 @@ class ProductStatus(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     
     def __str__(self) -> str:
-        return f"{self.company.company_name} _ {self.status}"
+        return f"{self.company} _ {self.status}"
