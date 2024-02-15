@@ -3,8 +3,9 @@ from decimal import Decimal
 from django.utils import timezone
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.http import HttpResponse
+import pandas as pd
 
-from origin.models import Company, Product, ProductInterest, ProductStatus, SalesPerformance, SalesProcess
+from origin.models import Company, Product, ProductInterest, ProductStatus, SalesPerformance, SalesProcess, UserWithCompanyCount
 from .forms import DetailRegistrationForm, ProductSelectionForm, ProductStatusUpdateForm, UserRegistrationForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -14,7 +15,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 import plotly.graph_objects as go
 import plotly.express as px
-
+from plotly.subplots import make_subplots
 # Create your views here.
 def UserRegistrationView(request):
     if request.method == 'POST':
@@ -323,19 +324,51 @@ def ProductInterestRateChart(request):
     return render(request, 'ProductInterestRateChart.html', context)
 
 # def SalesPerformanceChart(request):
-#     pstat = ProductStatus.objects.all()
-#     c_list=[]
-#     for p in pstat:
-#         cname = Company.objects.filter(id=p.id)
-#         c_list.append(p.company.id)
+#     companies_added_by_sales_person = Company.objects.all()
+#     # Create a dictionary to store the counts of each company name
+#     company_counts = {}
+#     for company in companies_added_by_sales_person:
+#         company_name = company.company_name
+#         company_counts[company_name] = company_counts.get(company_name, 0) + 1
+
+#     # Use the dictionary to get the counts while constructing the plot
 #     fig = go.Figure(data=[go.Bar(
-#         x=[user.user.username for user in pstat],
-#         y = [p.company.company_name for p in pstat]
-
-
+#         x=[company.user.username for company in companies_added_by_sales_person],
+#         y=[company_counts[company.company_name] for company in companies_added_by_sales_person]
 #     )])
+
     
 #     chart = fig.to_html()
 #     context={"chart": chart}
     
 #     return render(request, 'SalesPerformanceChart.html', context)
+
+def SalesPerformanceChart(request):
+    superusers = User.objects.filter(is_superuser=False)
+    
+    # Calculate the total number of leads generated and closed deals for each superuser
+    lead_generated_counts = [Company.objects.filter(user=superuser).count() for superuser in superusers]
+    closed_deals_counts = [ProductStatus.objects.filter(company__user=superuser, status='closed').count() for superuser in superusers]
+
+    # Create a DataFrame for Plotly Express
+    data = {
+        "Salesperson": [superuser.username for superuser in superusers],
+        "Lead Generated": lead_generated_counts,
+        "Closed Deals": closed_deals_counts
+    }
+    df = pd.DataFrame(data)
+
+    # Create the bar chart with Plotly Express
+    fig = px.bar(df, x="Salesperson", y=["Lead Generated", "Closed Deals"],
+                 title="Sales Performance Chart", barmode="group")
+
+    # Customize the layout
+    fig.update_layout(
+        yaxis=dict(title="Count"),
+    )
+
+    # Convert the figure to HTML
+    chart = fig.to_html()
+    context = {"chart": chart}
+
+    return render(request, "SalesPerformanceChart.html", context)

@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from django.forms import ValidationError
 # Create your models here.
 
+from django.contrib.auth.models import User
+from django.db import models
+
 class Company(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     company_name = models.CharField(max_length=1000)
@@ -14,8 +17,16 @@ class Company(models.Model):
         if not self.owner_number and not self.manager_number:
             raise ValidationError("At least one of owner number or manager number must be provided.")
         
-    def __str__(self) -> str:
-        return f"{self.company_name} - {self.company_address} - {self.user.username} "
+    def __str__(self):
+        return f"{self.company_name} - {self.company_address} - {self.user.username}"
+
+class UserWithCompanyCount(User):
+    class Meta:
+        proxy = True
+    
+    def company_count(self):
+        return self.company_set.count()
+
 
         
 class SalesProcess(models.Model):
