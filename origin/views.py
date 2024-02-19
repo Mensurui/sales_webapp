@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date
 from decimal import Decimal
 from django.utils import timezone
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
@@ -176,7 +176,7 @@ def SalesInfoView(request, company_id, status, product_id):
                 user_id = request.user.id
                 user = User.objects.get(id=user_id)
                 date_joined = user.date_joined
-                today = datetime.now(date_joined.tzinfo)
+                today = timezone.now()
                 difference = today - date_joined
                 months_difference = difference.days // 30
                 # print(f"Date joined: {date_joined}")
@@ -190,12 +190,14 @@ def SalesInfoView(request, company_id, status, product_id):
                 else:
                     spr.year += 1
                 interest_av = Decimal(interest)
-                product = Product.objects.get(pk=product_id)
+                product = Product.objects.get(id=product_id)
                 try:
                     product_interest = ProductInterest.objects.get(product_id=product.id)
                     # Update the existing product interest
                     product_interest.count += 1
-                    product_interest.average_interest = (product_interest.average_interest + interest_av) // product_interest.count
+                    total_interest = product_interest.average_interest * (product_interest.count - 1)  # Calculate total interest so far
+                    total_interest += interest_av  # Add the new interest
+                    product_interest.average_interest = total_interest / product_interest.count  # Calculate the new average
                     product_interest.save()
                     print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
                 except ProductInterest.DoesNotExist:
@@ -203,14 +205,16 @@ def SalesInfoView(request, company_id, status, product_id):
                     ProductInterest.objects.create(product=product, average_interest=interest, count=1)
             else:
                 interest_av = Decimal(interest)
-                product = Product.objects.get(pk=product_id)
+                product = Product.objects.get(id=product_id)
                 try:
                     product_interest = ProductInterest.objects.get(product_id=product.id)
                     # Update the existing product interest
                     product_interest.count += 1
-                    product_interest.average_interest = (product_interest.average_interest + interest_av) // product_interest.count
+                    total_interest = product_interest.average_interest * (product_interest.count - 1)  # Calculate total interest so far
+                    total_interest += interest_av  # Add the new interest
+                    product_interest.average_interest = total_interest / product_interest.count  # Calculate the new average
                     product_interest.save()
-                    print(f"Okay this is working {product_interest.average_interest}, and {interest_av}")
+                    print(f"Okay this second is working {product_interest.average_interest}, and {interest_av}")
                 except ProductInterest.DoesNotExist:
                     # Create a new ProductInterest object if it doesn't exist
                     ProductInterest.objects.create(product=product, average_interest=interest, count=1)
@@ -227,27 +231,7 @@ def SalesStatus(request, company_id):
     statuses = ProductStatus.objects.filter(company_id=company_id)
     return render(request, 'sales_status.html', {'statuses':statuses})
 
-from django.http import JsonResponse
 
-# @login_required
-# def SalesStatusUpdate(request, status_id):
-#     statuses = get_list_or_404(ProductStatus, id=status_id)
-#     # print(f"Status: {statuses.company_id}")
-#     stat = ProductStatus.objects.filter(id= status_id)
-#     # print(f"Status Ohoy: {stat}")
-#     if request.method == 'POST':
-#         form = ProductStatusUpdateForm(request.POST)
-#         if form.is_valid():
-#             updated_status = form.cleaned_data['updated_status']
-#             for status in statuses:
-#                 status.status = updated_status
-#                 status.save()
-#             return redirect('/sales_preview')
-#     else:
-#         form = ProductStatusUpdateForm()
-#     return render(request, 'sales_status.html', {'statuses': statuses, 'form': form})
-
-@login_required
 @login_required
 def SalesStatusUpdate(request, status_id):
     # Retrieve the ProductStatus instance
@@ -267,7 +251,7 @@ def SalesStatusUpdate(request, status_id):
                 user_id = request.user.id
                 user = User.objects.get(id=user_id)
                 date_joined = user.date_joined
-                today = datetime.now(date_joined.tzinfo)
+                today = date.now(date_joined.tzinfo)
                 difference = today - date_joined
                 months_difference = difference.days // 30
                 # print(f"Date joined: {date_joined}")
@@ -300,6 +284,7 @@ def Close_View(request):
     product_items = ProductStatus.objects.filter(company_id__in=company_ids)
     return render(request, 'closed_preview.html', {'product_items': product_items})
 
+
 def ProductInterestRateChart(request):
     product_list = ProductInterest.objects.all()
     name_list=[]
@@ -323,25 +308,6 @@ def ProductInterestRateChart(request):
     
     return render(request, 'ProductInterestRateChart.html', context)
 
-# def SalesPerformanceChart(request):
-#     companies_added_by_sales_person = Company.objects.all()
-#     # Create a dictionary to store the counts of each company name
-#     company_counts = {}
-#     for company in companies_added_by_sales_person:
-#         company_name = company.company_name
-#         company_counts[company_name] = company_counts.get(company_name, 0) + 1
-
-#     # Use the dictionary to get the counts while constructing the plot
-#     fig = go.Figure(data=[go.Bar(
-#         x=[company.user.username for company in companies_added_by_sales_person],
-#         y=[company_counts[company.company_name] for company in companies_added_by_sales_person]
-#     )])
-
-    
-#     chart = fig.to_html()
-#     context={"chart": chart}
-    
-#     return render(request, 'SalesPerformanceChart.html', context)
 
 def SalesPerformanceChart(request):
     superusers = User.objects.filter(is_superuser=False)
@@ -356,7 +322,7 @@ def SalesPerformanceChart(request):
         "Lead Generated": lead_generated_counts,
         "Closed Deals": closed_deals_counts
     }
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data,)
 
     # Create the bar chart with Plotly Express
     fig = px.bar(df, x="Salesperson", y=["Lead Generated", "Closed Deals"],
@@ -372,3 +338,83 @@ def SalesPerformanceChart(request):
     context = {"chart": chart}
 
     return render(request, "SalesPerformanceChart.html", context)
+
+
+
+
+def SalesTrendsChart(request):
+    # Retrieve product status data excluding 'pending' statuses
+    product_status = ProductStatus.objects.exclude(status="pending")
+    
+    # Create a DataFrame to aggregate the data for all products
+    total_data = {'date': [], 'status': []}
+    product_data = {}
+
+    # Aggregate data for all products and individual products
+    for status in product_status:
+        total_data['date'].append(status.date_updated)
+        total_data['status'].append(status.status)
+
+        # Aggregate data for each product
+        if status.product_id not in product_data:
+            product_data[status.product_id] = {'date': [], 'status': []}
+        product_data[status.product_id]['date'].append(status.date_updated)
+        product_data[status.product_id]['status'].append(status.status)
+
+    # Create DataFrame for total data
+    df_total = pd.DataFrame(total_data)
+    df_total['date'] = pd.to_datetime(df_total['date'])  # Convert date column to datetime
+    df_total.set_index('date', inplace=True)  # Set date column as index
+
+    # Ensure the index is a DatetimeIndex
+    if not isinstance(df_total.index, pd.DatetimeIndex):
+        df_total.index = pd.to_datetime(df_total.index)
+
+    # Group by date and status, count occurrences, and unstack to pivot status to columns for total data
+    df_total_counts = df_total.groupby([pd.Grouper(freq='D'), 'status']).size().unstack(fill_value=0)
+
+    # Create traces for each status for total data
+    total_traces = []
+    for column in df_total_counts.columns:
+        total_traces.append(go.Scatter(x=df_total_counts.index, y=df_total_counts[column], mode='lines', name=column.capitalize()))
+
+    # Create the figure for total data
+    fig_total = go.Figure(total_traces)
+    fig_total.update_layout(title='Total Sales Trends Chart', xaxis_title='Date', yaxis_title='Number of Sales')
+
+    # Create figures for individual product data
+    product_charts = []  # Store HTML representations of individual product charts
+    for product_id, data in product_data.items():
+        df_product = pd.DataFrame(data)
+        df_product['date'] = pd.to_datetime(df_product['date'])  # Convert date column to datetime
+        df_product.set_index('date', inplace=True)  # Set date column as index
+
+        # Ensure the index is a DatetimeIndex
+        if not isinstance(df_product.index, pd.DatetimeIndex):
+            df_product.index = pd.to_datetime(df_product.index)
+
+        # Group by date and status, count occurrences, and unstack to pivot status to columns for individual product data
+        df_product_counts = df_product.groupby([pd.Grouper(freq='D'), 'status']).size().unstack(fill_value=0)
+
+        # Create traces for each status for individual product data
+        product_traces = []
+        product_name = Product.objects.get(id=product_id).product_name
+        for column in df_product_counts.columns:
+            product_traces.append(go.Scatter(x=df_product_counts.index, y=df_product_counts[column], mode='lines', name=column.capitalize()))
+
+        # Create the figure for individual product data
+        fig_product = go.Figure(product_traces)
+        fig_product.update_layout(title=f'Sales Trends Chart for {product_name}', xaxis_title='Date', yaxis_title='Number of Sales')
+
+        # Convert the figure to HTML
+        chart_product = fig_product.to_html()
+        product_charts.append(chart_product)  # Append HTML representation to the list
+
+    # Convert total figure to HTML
+    chart_total = fig_total.to_html()
+
+    # Pass the HTML representations to the template
+    context = {"product_charts": product_charts, "chart_total": chart_total}
+
+    # Return a success message
+    return render(request, 'sales_trend_chart.html', context)

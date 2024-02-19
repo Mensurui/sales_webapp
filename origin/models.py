@@ -32,7 +32,7 @@ class UserWithCompanyCount(User):
 class SalesProcess(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     interest = models.IntegerField(choices=[(i, i) for i in range(1, 11)])
-    date_created = models.DateTimeField(auto_now_add=True)
+    date_created = models.DateField(auto_now_add=True)
     def __str__(self) -> str:
         return f"{self.interest}"
     
@@ -68,7 +68,7 @@ class ProductStatus(models.Model):
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     description = models.TextField()
-    date_updated = models.DateTimeField(auto_now=True)
+    date_updated = models.DateField(auto_now=True)
     
     def __str__(self) -> str:
         return f"{self.company} _ {self.status}"

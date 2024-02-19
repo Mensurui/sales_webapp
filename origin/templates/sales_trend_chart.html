@@ -1,0 +1,8 @@
+
+{% extends "base.html" %}
+{% block content %}
+{% for product_chart in product_charts %}
+{{ product_chart | safe }} 
+{% endfor %}
+{{chart_total | safe }}
+{% endblock content %}
