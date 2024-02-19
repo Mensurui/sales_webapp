@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from django.utils import timezone
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
@@ -89,6 +89,7 @@ def SalesPreViewClosed(request):
     
     # Filter ProductStatus instances with 'closed' status
     closed_statuses = ProductStatus.objects.filter(status="closed")
+    
     
     # Get the company IDs associated with closed statuses
     company_ids = closed_statuses.values_list('company_id', flat=True)
@@ -251,7 +252,7 @@ def SalesStatusUpdate(request, status_id):
                 user_id = request.user.id
                 user = User.objects.get(id=user_id)
                 date_joined = user.date_joined
-                today = date.now(date_joined.tzinfo)
+                today = datetime.now(date_joined.tzinfo)
                 difference = today - date_joined
                 months_difference = difference.days // 30
                 # print(f"Date joined: {date_joined}")
